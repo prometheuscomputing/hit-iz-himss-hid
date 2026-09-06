@@ -1,6 +1,6 @@
 # Building the HIMSS image
 
-How the Docker image is produced. For when to publish it, see [README.md](README.md).
+How the Docker image is produced. Releases use git tag `himss-<app.version>` (see [README.md](README.md)). The published image carries that version as `org.opencontainers.image.version` and `/opt/himss-release`.
 
 The image is `hit-iz-himss-hid:local` when built on a workstation, or `ghcr.io/prometheuscomputing/hit-iz-himss-hid:<tag>` from CI. The app is always served at **`/immunization-himss/`**.
 

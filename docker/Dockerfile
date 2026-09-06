@@ -4,6 +4,7 @@
 # Host only needs Docker. Dependencies resolve from https://nexus.valitheus.com/
 
 ARG SKIP_FRONTEND=0
+ARG TOOL_VERSION=unknown
 ARG RESOURCE_BUNDLE_VERSION=dev
 
 FROM node:8.17.0-buster AS frontend
@@ -73,8 +74,16 @@ RUN if [ "$SKIP_FRONTEND" = "0" ]; then \
 
 FROM tomcat:9.0.117-jdk17-temurin-noble AS runtime
 
+ARG TOOL_VERSION=unknown
+ARG RESOURCE_BUNDLE_VERSION=dev
+
+LABEL org.opencontainers.image.title="HIMSS Immunization Test Suite" \
+      org.opencontainers.image.version="${TOOL_VERSION}" \
+      org.opencontainers.image.source="https://github.com/prometheuscomputing/hit-iz-himss-hid"
+
 COPY --from=backend /build/hit-iz-web/target/immunization-himss.war /usr/local/tomcat/webapps/immunization-himss.war
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+    && printf 'tool=%s\nbundle=%s\n' "${TOOL_VERSION}" "${RESOURCE_BUNDLE_VERSION}" > /opt/himss-release
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -78,23 +78,22 @@ CERT_TOOLS_DIR=/path/to/your/compose ./build.sh -r
 
 ## Resource bundle and image
 
-Three Actions. Process and publish are opt-in. The image is built only on the PR into `himss`.
+Three Actions. Process is manual. The published image is built from `himss` after a merge, or when you run the build Action by hand.
 
 ```
-Run workflow (process)      process + bump version + commit on himss-deploy
+Run workflow (process)      process + bump bundle version + commit on himss-deploy
 
-PR himss-deploy → himss     build + smoke  (no GHCR)
+PR himss-deploy → himss     smoke build  (no GHCR)
 
-merge into himss            nothing published
-
-Release or Run workflow     build + smoke + publish GHCR
+merge into himss            build + smoke + publish GHCR + tag himss-<app.version>
+  or Run workflow
 ```
 
 | Workflow | Trigger | Process zip | Build + smoke | GHCR |
 |----------|---------|-------------|---------------|------|
 | [process-resource-bundle.yml](.github/workflows/process-resource-bundle.yml) | **Run workflow** only | Always | No | No |
 | [build-himss.yml](.github/workflows/build-himss.yml) | PR into `himss` | No | Yes | No |
-| [publish-himss-image.yml](.github/workflows/publish-himss-image.yml) | GitHub Release or **Run workflow** | No | Yes | Yes |
+| [publish-himss-image.yml](.github/workflows/publish-himss-image.yml) | Push to `himss`, or **Run workflow** | No | Yes | Yes |
 
 ### 1. Process the zip on `himss-deploy`
 
@@ -110,21 +109,32 @@ bash scripts/process-tcamt-resource-bundle.sh --apply --bump-version tcamt-expor
 
 ### 2. Pull request into `himss`
 
-Open `himss-deploy` → `himss`. Reviewers see the processed resource diff. The PR check is the only automatic image build and smoke test. Merge does not publish.
+Open `himss-deploy` → `himss`. Reviewers see the processed resource diff. The PR check smoke-builds the image and does not publish.
 
-### 3. Publish when you choose
+### 3. Build and publish from `himss`
 
-`ghcr.io/prometheuscomputing/hit-iz-himss-hid`
+A merge into `himss`, or **Actions → Build HIMSS image → Run workflow**, builds from `himss`, smoke-tests, and pushes `ghcr.io/prometheuscomputing/hit-iz-himss-hid`.
 
-Create a GitHub Release, or **Actions → Publish HIMSS Tool image → Run workflow** with a tag (for example `1.9.15`). That builds, smoke-tests, and pushes:
+### Release convention
 
-| Tag | Meaning |
-|-----|---------|
-| the Release / dispatch tag | What you named this publish |
-| same tag without a leading `v` | Convenience alias |
-| `rb-<app.resourceBundleVersion>` | Bundle version in `app-config.properties` (e.g. `rb-1.9.15`) |
-| `sha-<7-char>` | Git SHA that was built |
-| `himss` | Moving pointer at the last published image |
+NIST shipped this tool as git tag `himss-1.9.14` and Docker Hub `nist775hit/hit-iz-himss-tool:1.9.14e`. Letter suffixes (`d`, `e`) were image rebuilds of the same tool version. We keep the `himss-<app.version>` tag and drop the letter; a rebuild of the same release is `sha-<7-char>`.
+
+| Field | Where | Example |
+|-------|--------|---------|
+| Tool version | `app.version` in `hit-iz-web/src/main/resources/app-config.properties` (UI badge via `/api/appInfo`) | `1.9.15` |
+| Git tag + GitHub Release | `himss-<app.version>` on `himss`, created by the build Action if missing | `himss-1.9.15` |
+| Resource bundle | `app.resourceBundleVersion` (bumped by the process Action) | `1.9.15` |
+| In the image | OCI label `org.opencontainers.image.version` and `/opt/himss-release` | `tool=1.9.15` |
+
+To cut a new tool release: bump `app.version` (and `app.date`) on `himss-deploy`, PR into `himss`, merge. The build Action tags the image and the repo.
+
+| Image tag | Meaning |
+|-----------|---------|
+| `himss-<app.version>` | Release tag (same as the git tag) |
+| `<app.version>` | Short alias (`1.9.15`) |
+| `rb-<app.resourceBundleVersion>` | Bundle version in this image |
+| `sha-<7-char>` | Exact `himss` commit that was built |
+| `himss` | Moving pointer at the last published `himss` image |
 | `latest` | Same as this publish |
 
 ---

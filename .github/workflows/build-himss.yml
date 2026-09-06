@@ -1,7 +1,7 @@
 name: HIMSS PR check
 
-# The only image build + smoke. Runs on a pull request into himss.
-# Does not process the zip and does not publish.
+# PR smoke check into himss. Does not publish.
+# Images are created on himss after merge (publish-himss-image.yml).
 
 run-name: HIMSS PR check
 

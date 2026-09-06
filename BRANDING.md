@@ -20,7 +20,7 @@ After a full build, commit any updated `webapp/` files if you want skip-frontend
 
 | UI element | Example (HIMSS deployment) | Source |
 |------------|---------------------------|--------|
-| Suite title + version | **HIMSS** Immunization Integration Test Suite **1.9.14** | Backend config → `/api/appInfo` |
+| Suite title + version | **HIMSS** Immunization Integration Test Suite **1.9.15** | Backend config → `/api/appInfo` |
 | Subtitle | powered by NIST | Backend config → `app.domain` |
 | SITT program line | Standards & Interoperability Testing Tools (SITT) | Frontend template + CSS |
 | Header lockup | Hosted by **VALITHEUS** | Frontend template + CSS |
@@ -49,7 +49,7 @@ The suite title line uses Angular bindings:
 
 - `appInfo.options.ORGANIZATION_NAME` → e.g. **HIMSS**
 - `appInfo.name` → e.g. Immunization Integration Test Suite
-- `appInfo.version` → e.g. 1.9.14
+- `appInfo.version` → e.g. 1.9.15
 - `appInfo.subTitle` → e.g. powered by NIST
 
 ### Footer — Prometheus + logos
