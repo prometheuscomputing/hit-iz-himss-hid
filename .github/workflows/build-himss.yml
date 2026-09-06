@@ -1,0 +1,95 @@
+name: Build HIMSS Tool
+
+on:
+  push:
+    branches: [himss]
+    paths:
+      - 'hit-iz-resource/**'
+      - 'hit-iz-domain/**'
+      - 'hit-iz-repo/**'
+      - 'hit-iz-service/**'
+      - 'hit-iz-ws/**'
+      - 'hit-iz-web/**'
+      - 'docker/**'
+      - 'scripts/**'
+      - 'tcamt-export/resources.zip'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '.dockerignore'
+      - '.github/workflows/build-himss.yml'
+  pull_request:
+    branches: [himss]
+    paths:
+      - 'hit-iz-resource/**'
+      - 'hit-iz-domain/**'
+      - 'hit-iz-repo/**'
+      - 'hit-iz-service/**'
+      - 'hit-iz-ws/**'
+      - 'hit-iz-web/**'
+      - 'docker/**'
+      - 'scripts/**'
+      - 'tcamt-export/resources.zip'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '.dockerignore'
+      - '.github/workflows/build-himss.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify resource bundle version bump
+        run: bash scripts/verify-resource-bundle-version.sh
+
+      - name: Check if frontend rebuild is needed
+        id: frontend
+        run: |
+          if bash scripts/needs-frontend-build.sh; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "skip_frontend=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "skip_frontend=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build tool image in Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: hit-iz-himss-hid:ci
+          build-args: |
+            SKIP_FRONTEND=${{ steps.frontend.outputs.skip_frontend }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract WAR from image
+        run: |
+          mkdir -p hit-iz-web/target
+          cid="$(docker create hit-iz-himss-hid:ci)"
+          docker cp "$cid:/usr/local/tomcat/webapps/immunization-himss.war" hit-iz-web/target/immunization-himss.war
+          docker rm "$cid"
+          ls -lh hit-iz-web/target/immunization-himss.war
+
+      - name: Upload WAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: immunization-himss-war
+          path: hit-iz-web/target/immunization-himss.war
+          if-no-files-found: error
+
+      - name: Smoke test image
+        run: bash scripts/docker-smoke-test.sh hit-iz-himss-hid:ci 18080

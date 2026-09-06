@@ -25,6 +25,21 @@
 		
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>gov.nist.hit.hl7</groupId>
+				<artifactId>xml-verification</artifactId>
+				<version>1.6.0-LEGACY</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.healthcare</groupId>
+				<artifactId>schematronValidation</artifactId>
+				<version>1.1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 
 		<dependency>
@@ -146,21 +161,43 @@
 		</pluginManagement>
 	</build>
 
+	<!-- HIT artifacts are hosted on Valitheus Nexus (not Maven Central). -->
+	<repositories>
+		<repository>
+			<id>valitheus-public</id>
+			<url>https://nexus.valitheus.com/repository/public/</url>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>valitheus-releases</id>
+			<url>https://nexus.valitheus.com/repository/releases/</url>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>valitheus-snapshots</id>
+			<url>https://nexus.valitheus.com/repository/snapshots/</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+	</repositories>
+
 	<distributionManagement>
 		<repository>
 			<id>releases</id>
-			<url>https://hit-nexus.nist.gov/repository/releases/</url>
+			<url>https://nexus.valitheus.com/repository/releases/</url>
 		</repository>
 		<snapshotRepository>
 			<id>snapshots</id>
 			<name>Internal Snapshots</name>
-			<url>https://hit-nexus.nist.gov/repository/snapshots</url>
+			<url>https://nexus.valitheus.com/repository/snapshots/</url>
 		</snapshotRepository>
 	</distributionManagement>
 	<scm>
-		<connection>scm:git:https://github.com/usnistgov/hit-iz-tool.git</connection>
-		<url>scm:git:https://github.com/usnistgov/hit-iz-tool.git</url>
-		<developerConnection>scm:git:https://github.com/usnistgov/hit-iz-tool.git</developerConnection>
+		<connection>scm:git:https://github.com/prometheuscomputing/hit-iz-himss-hid.git</connection>
+		<url>scm:git:https://github.com/prometheuscomputing/hit-iz-himss-hid.git</url>
+		<developerConnection>scm:git:https://github.com/prometheuscomputing/hit-iz-himss-hid.git</developerConnection>
      </scm>
   
 </project>

@@ -1,0 +1,11 @@
+.git
+**/.idea
+**/*.iml
+**/target
+**/node_modules
+hit-iz-web/client/app/bower_components
+*.md
+!hit-iz-resource/**/*.md
+docker-compose*.yml
+.env
+.env.*

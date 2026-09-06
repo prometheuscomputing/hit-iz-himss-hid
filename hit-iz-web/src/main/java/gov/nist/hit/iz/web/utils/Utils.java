@@ -47,11 +47,13 @@ public class Utils {
 		if (host.contains("psapps01.nist.gov")) {
 			host = "www-s.nist.gov";
 		} else {
-			// Yeah I know, I have no other choice
-			host = host.replaceAll("hit-dev.nist.gov:8098", "hl7v2-iz-r1.5-testing.nist.gov");
-			host = host.replaceAll("hl7v2-iz-r1.5-testing.nist.gov:8098", "hl7v2-iz-r1.5-testing.nist.gov");
-			host = host.replaceAll("hit-dev.nist.gov:9009", "hl7v2-iz-cdc-testing.nist.gov");
-			host = host.replaceAll("hl7v2-iz-cdc-testing.nist.gov:9009", "hl7v2-iz-cdc-testing.nist.gov");
+			// Legacy NIST dev/prod hosts → Valitheus
+			host = host.replaceAll("hit-dev.nist.gov:8098", "tools.valitheus.com");
+			host = host.replaceAll("hl7v2-iz-r1\\.5-testing.nist.gov:8098", "tools.valitheus.com");
+			host = host.replaceAll("hl7v2-iz-r1-5-testing.nist.gov", "tools.valitheus.com");
+			host = host.replaceAll("hit-dev.nist.gov:9009", "tools.valitheus.com");
+			host = host.replaceAll("hl7v2-iz-cdc-testing.nist.gov:9009", "tools.valitheus.com");
+			host = host.replaceAll("hl7v2-iz-cdc-testing.nist.gov", "tools.valitheus.com");
 		}
 		return scheme + "://" + host + request.getContextPath();
 	}

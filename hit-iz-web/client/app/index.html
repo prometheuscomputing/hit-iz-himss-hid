@@ -40,7 +40,6 @@
   <link rel="stylesheet" href="styles/font-awesome.min.css"/>
 
   <!--   GTAG -->
-  <script src="lib/gtag/gtag-init.js"></script>
 
   <script src="lib/codemirror/lib/codemirror.js"></script>
   <script src="lib/codemirror/lib/formating.js"></script>
@@ -113,6 +112,8 @@
   <script src="bower_components/angular-localforage/dist/angular-localforage.js"></script>
 
   <!-- endbuild -->
+  <!-- Fallback if usemin drops angular-localforage from vendor.js -->
+  <script src="lib/angular-localforage/angular-localforage.js"></script>
 
   <script src="lib/i18n/jquery.i18n.properties-1.0.9.js"></script>
   <script src="lib/vkbeautify/vkbeautify.js"></script>

@@ -1,43 +1,57 @@
-
 <!-- <!-- Fixed navbar -->
 <div class="navbar navbar-default navbar-static-top" role="navigation">
     <div class="brand" id="appheader">
-        <a style="display: inline-block; text-shadow:none" href="#">
-            <div id="apptitle">{{appInfo.options.ORGANIZATION_NAME != null && appInfo.options.ORGANIZATION_NAME !=
-                undefined ? appInfo.options.ORGANIZATION_NAME: 'NIST'}} <span
-                        style='color:white;'>{{appInfo.name}}</span><span
-                        style='color:red; font-size:12px'> {{appInfo.version}}</span> <span ng-if="isDevTool()" style='color:red; font-size:60px'>HIMSS DEV TOOL!</span></div>
+<div class="hosted-lockup"><a class="mb appheader-mb" href="https://valitheus.com" target="_blank" rel="noopener" title="Hosted by Valitheus">
+			<span class="mb-eyebrow">Hosted&nbsp;by</span>
+			<svg class="vt-mark" width="26" height="26" viewBox="0 0 64 64" role="img" aria-label="Valitheus">
+				<defs>
+					<linearGradient id="vt-grad" x1="6" y1="0" x2="50" y2="0" gradientUnits="userSpaceOnUse">
+						<stop offset="0" stop-color="#0F766E"/>
+						<stop offset="1" stop-color="#2DD4BF"/>
+					</linearGradient>
+					<pattern id="vt-grid-minor" width="8" height="8" patternUnits="userSpaceOnUse">
+						<path d="M8,0 L0,0 L0,8" fill="none" stroke="rgba(94,234,212,0.07)" stroke-width="0.7"/>
+					</pattern>
+					<pattern id="vt-grid-major" width="24" height="24" patternUnits="userSpaceOnUse">
+						<path d="M24,0 L0,0 L0,24" fill="none" stroke="rgba(94,234,212,0.11)" stroke-width="0.7"/>
+					</pattern>
+				</defs>
+				<rect width="64" height="64" rx="14" fill="#0F172A" stroke="rgba(255,255,255,0.10)"/>
+				<rect x="1" y="1" width="62" height="62" rx="13" fill="url(#vt-grid-minor)"/>
+				<rect x="1" y="1" width="62" height="62" rx="13" fill="url(#vt-grid-major)"/>
+				<path d="M6,26 L14,26 L16,21 L18,29 L20,26 L24,26 L31,41.5 L50.5,12" fill="none" stroke="url(#vt-grad)" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+				<circle cx="50.5" cy="12" r="5" fill="rgba(230,255,250,0.22)"/>
+				<circle cx="50.5" cy="12" r="2.1" fill="#E6FFFA"/>
+			</svg>
+			<span class="mb-name">VALI<span class="vt-word-accent">THEUS</span></span>
+		</a>
+		</div>        <a style="display: inline-block; text-shadow:none" href="#">
+<div id="programbrand"><span class="pb-tick"></span><span class="pb-text">Standards &amp; Interoperability Testing Tools (SITT)</span></div>            <div id="apptitle">{{appInfo.options.ORGANIZATION_NAME != null && appInfo.options.ORGANIZATION_NAME !=
+                undefined ? appInfo.options.ORGANIZATION_NAME: 'NIST'}} <span style="color:white">{{appInfo.name}}</span><span style="color:red; font-size:12px"> {{appInfo.version}}</span> <span ng-if="isDevTool()" style="color:red; font-size:60px">HIMSS DEV TOOL!</span></div>
             <div id="appsubtitle">{{appInfo.subTitle}}</div>
         </a>
 
 	<span ng-if="isDomainSelectionSupported()">
-        <span class="pull-right" style="margin-top:10px"
-              ng-show="appInfo.domains != null && appInfo.domains.length > 0">
+        <span class="pull-right" style="margin-top:10px" ng-show="appInfo.domains != null && appInfo.domains.length > 0">
 
             <span ng-if="isAuthenticated()">
         <label style="color:white">Tool Scope:</label>
 
-                <div class="btn-group" ng-class='{open: open}'>
-    <button class="btn btn-sm" ng-click='open=!open'>
+                <div class="btn-group" ng-class="{open: open}">
+    <button class="btn btn-sm" ng-click="open=!open">
             {{domain.name}}
     </button>
-    <button class="btn btn-sm dropdown-toggle" data-toggle="dropdown" ng-click='open=!open'>
+    <button class="btn btn-sm dropdown-toggle" data-toggle="dropdown" ng-click="open=!open">
         <span class="caret"></span>
     </button>
     <ul class="dropdown-menu">
         <li class="dropdown-header" ng-if="domainsByOwner['my'].length > 0">My Tool Scopes</li>
-        <li ng-show="domainsByOwner['my'].length > 0"
-            ng-click="appInfo.selectedDomain = dom.domain; selectDomain(appInfo.selectedDomain)"
-            ng-class="{'domain-selected': domain.domain === dom.domain, 'disabled': domain.domain === dom.domain}"
-            ng-repeat="dom in domainsByOwner['my']"><a href="#">
+        <li ng-show="domainsByOwner['my'].length > 0" ng-click="appInfo.selectedDomain = dom.domain; selectDomain(appInfo.selectedDomain)" ng-class="{'domain-selected': domain.domain === dom.domain, 'disabled': domain.domain === dom.domain}" ng-repeat="dom in domainsByOwner['my']"><a href="#">
             <span style="color: #438007" ng-show="dom.scope === 'GLOBAL'"><i class="fa fa-circle fa-fw"></i></span>
             <span style="color: #ff240b" ng-show="dom.scope === 'USER'"><i class="fa fa-circle fa-fw"></i></span>
             {{dom.name}}</a></li>
          <li class="dropdown-header" ng-if="domainsByOwner['others'].length > 0">Others Tool Scopes</li>
-         <li ng-show="domainsByOwner['others'].length > 0"
-             ng-click="appInfo.selectedDomain = dom.domain; selectDomain(appInfo.selectedDomain)"
-             ng-class="{'domain-selected': domain.domain === dom.domain}" ng-repeat="dom in domainsByOwner['others']"><a
-                 href="#">
+         <li ng-show="domainsByOwner['others'].length > 0" ng-click="appInfo.selectedDomain = dom.domain; selectDomain(appInfo.selectedDomain)" ng-class="{'domain-selected': domain.domain === dom.domain}" ng-repeat="dom in domainsByOwner['others']"><a href="#">
             <span style="color: #438007" ng-show="dom.scope === 'GLOBAL'"><i class="fa fa-circle fa-fw"></i></span>
             <span style="color: #ff240b" ng-show="dom.scope === 'USER'"><i class="fa fa-circle fa-fw"></i></span>
             {{dom.name}}</a></li>
@@ -55,24 +69,20 @@
                 <!--</select>-->
             </span>
             <span ng-if="!isAuthenticated()">
-                <div class="btn-group" ng-class='{open: open}'>
-    <button class="btn btn-sm" ng-click='open=!open'>
+                <div class="btn-group" ng-class="{open: open}">
+    <button class="btn btn-sm" ng-click="open=!open">
             {{domain.name}}
     </button>
-    <button class="btn btn-sm dropdown-toggle" data-toggle="dropdown" ng-click='open=!open'>
+    <button class="btn btn-sm dropdown-toggle" data-toggle="dropdown" ng-click="open=!open">
         <span class="caret"></span>
     </button>
     <ul class="dropdown-menu">
-        <li ng-if="appInfo.domains.length > 0"
-            ng-click="appInfo.selectedDomain = dom.domain; selectDomain(appInfo.selectedDomain)"
-            ng-class="{'domain-selected': domain.domain === dom.domain, 'disabled': domain.domain === dom.domain}"
-            ng-repeat="dom in appInfo.domains"><a href="#">
+        <li ng-if="appInfo.domains.length > 0" ng-click="appInfo.selectedDomain = dom.domain; selectDomain(appInfo.selectedDomain)" ng-class="{'domain-selected': domain.domain === dom.domain, 'disabled': domain.domain === dom.domain}" ng-repeat="dom in appInfo.domains"><a href="#">
              {{dom.name}}</a></li>
     </ul>
 </div>
             </span>
-        <button ng-show="isAuthenticated() && isDomainsManagementSupported()" ng-click="createDomain()"
-                class="btn btn-primary btn-sm" title="Create New Tool Scope"><i class="fa fa-plus"></i>Create</button>
+        <button ng-show="isAuthenticated() && isDomainsManagementSupported()" ng-click="createDomain()" class="btn btn-primary btn-sm" title="Create New Tool Scope"><i class="fa fa-plus"></i>Create</button>
 
       </span>
       </span>
@@ -93,37 +103,27 @@
                 <i class="fa fa-th-list"></i>
                 HL7 Context-based</a></li>
             <li ng-class="{'active':isActive('/doc')}"><a href="#/doc"><i class="fa fa-book"></i>Documentation</a></li>
-            <li ng-class="{'active':isActive('/about')}"><a href="#/about"><i
-                    class="fa fa-question-circle"></i>About</a></li>
+            <li ng-class="{'active':isActive('/about')}"><a href="#/about"><i class="fa fa-question-circle"></i>About</a></li>
         </ul>
 
         <ul class="nav navbar-nav navbar-right" style="margin-right: 15px">
-            <li class="dropdown clear-fix" ng-show="isAuthenticated()"
-                ng-class="isActive('/useraccount') || isActive('/transport')">
-                <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                   aria-expanded="false"><i
-                        class="fa fa-user"></i>&nbsp;Hello {{getUsername()}}<span class="caret"></span></a>
+            <li class="dropdown clear-fix" ng-show="isAuthenticated()" ng-class="isActive('/useraccount') || isActive('/transport')">
+                <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-user"></i>&nbsp;Hello {{getUsername()}}<span class="caret"></span></a>
                 <ul class="dropdown-menu">
-                    <li ng-class="isActive('/useraccount')"><a class="point" href="#/useraccount"><i
-                            class="fa fa-user"></i>&nbsp;My Profile</a></li>
+                    <li ng-class="isActive('/useraccount')"><a class="point" href="#/useraccount"><i class="fa fa-user"></i>&nbsp;My Profile</a></li>
                     <li role="separator" class="divider"></li>
 
-                    <li ng-class="{'active':isActive('/transport')}" ng-show="transportSupported"><a
-                            href="#/transport">
+                    <li ng-class="{'active':isActive('/transport')}" ng-show="transportSupported"><a href="#/transport">
                         <i title="Transport Configuration" class="label label-danger label-icon2">T</i>
                         Transport Settings</a></li>
                     <li role="separator" class="divider"></li>
                     <li><a ng-click="showSettings()"><i class="fa fa-cog"></i>&nbsp; Validation Settings</a>
                     </li>
-                    <li ng-if="isDomainsManagementSupported()" role="separator"
-                        class="divider"></li>
-                    <li ng-if="isDomainsManagementSupported()" ng-class="isActive('/domains')"><a
-                            class="point" href="#/domains"><i
-                            class="fa fa-cog"></i>&nbsp; Tool Scopes Settings</a></li>
+                    <li ng-if="isDomainsManagementSupported()" role="separator" class="divider"></li>
+                    <li ng-if="isDomainsManagementSupported()" ng-class="isActive('/domains')"><a class="point" href="#/domains"><i class="fa fa-cog"></i>&nbsp; Tool Scopes Settings</a></li>
                     <li role="separator" class="divider"></li>
 
-                    <li ng-show="isAdmin()" ng-class="isActive('/logs')"><a class="point" href="#/logs"><i
-                            class="fa fa-cog"></i>&nbsp;Admin Logs</a></li>
+                    <li ng-show="isAdmin()" ng-class="isActive('/logs')"><a class="point" href="#/logs"><i class="fa fa-cog"></i>&nbsp;Admin Logs</a></li>
                     <li ng-show="isAdmin()" role="separator" class="divider"></li>
 
                     <li class="">
@@ -133,11 +133,8 @@
                 </ul>
             </li>
 
-            <li class="dropdown clear-fix" ng-show="!isAuthenticated()"
-                ng-class="isActive('/useraccount') || isActive('/registration') || isActive('/forgotten') || isActive('/transport')">
-                <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                   aria-expanded="false"><i
-                        class="fa fa-user"></i>&nbsp;Hello Guest <span class="caret"></span></a>
+            <li class="dropdown clear-fix" ng-show="!isAuthenticated()" ng-class="isActive('/useraccount') || isActive('/registration') || isActive('/forgotten') || isActive('/transport')">
+                <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-user"></i>&nbsp;Hello Guest <span class="caret"></span></a>
                 <ul class="dropdown-menu">
                     <li class="">
                         <a class="point" ng-click="loginReq()"><i class="fa fa-sign-in"></i>&nbsp; <span class="msg">Login</span></a>
@@ -155,9 +152,7 @@
                         </a>
                     </li>
                     <li ng-if="!isAuthenticationRequired()" role="separator" class="divider"></li>
-                    <li ng-class="{'active':isActive('/transport')}"
-                        ng-show="transportSupported && !isAuthenticationRequired()"><a
-                            href="#/transport">
+                    <li ng-class="{'active':isActive('/transport')}" ng-show="transportSupported && !isAuthenticationRequired()"><a href="#/transport">
                         <i title="Transport Configuration" class="label label-danger label-icon2">T</i>
                         Transport Settings</a></li>
                     <li ng-if="!isAuthenticationRequired()" role="separator" class="divider"></li>

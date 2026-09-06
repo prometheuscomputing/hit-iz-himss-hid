@@ -48,7 +48,7 @@ module.exports = function (grunt) {
       },
       compass: {
         files: ['<%= yeoman.app %>/styles/{,*/}*.{scss,sass}'],
-        tasks: ['compass:server', 'autoprefixer']
+        tasks: ['sass:server', 'autoprefixer']
       },
       gruntfile: {
         files: ['Gruntfile.js']
@@ -202,7 +202,32 @@ module.exports = function (grunt) {
     },
 
 
-    // Compiles Sass to CSS and generates necessary files if requested
+    // Compiles Sass to CSS via node-sass (Docker-friendly; no Ruby Compass).
+    sass: {
+      options: {
+        implementation: require('node-sass'),
+        sourceMap: false,
+        includePaths: [
+          '<%= yeoman.app %>/bower_components',
+          '<%= yeoman.app %>/styles'
+        ]
+      },
+      dist: {
+        files: {
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
+        }
+      },
+      server: {
+        options: {
+          sourceMap: true
+        },
+        files: {
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.scss'
+        }
+      }
+    },
+
+    // Legacy compass config kept for reference; build uses sass above.
     compass: {
       options: {
         sassDir: '<%= yeoman.app %>/styles',
@@ -304,7 +329,8 @@ module.exports = function (grunt) {
           {
             expand: true,
             cwd: '<%= yeoman.dist %>',
-            src: ['*.html', 'views/**/*.html'],
+            // Partner chrome templates contain SVG; htmlmin lowercases attributes and breaks the Valitheus mark.
+            src: ['*.html', 'views/**/*.html', '!views/header.html', '!views/footer.html'],
             dest: '<%= yeoman.dist %>'
           }
         ]
@@ -401,13 +427,13 @@ module.exports = function (grunt) {
     // Run some tasks in parallel to speed up the build process
     concurrent: {
       server: [
-        'compass:server'
+        'sass:server'
       ],
       test: [
-        'compass'
+        'sass:server'
       ],
       dist: [
-        'compass:dist',
+        'sass:dist',
         'imagemin',
         'svgmin'
       ]
