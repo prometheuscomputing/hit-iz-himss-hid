@@ -58,19 +58,28 @@ COPY hit-iz-repo/ hit-iz-repo/
 COPY hit-iz-service/ hit-iz-service/
 COPY hit-iz-ws/ hit-iz-ws/
 COPY hit-iz-web/ hit-iz-web/
-COPY scripts/embed-resource-bundle-in-war.sh scripts/
+COPY scripts/embed-resource-bundle-in-war.sh scripts/check-war.sh scripts/
 
 COPY --from=frontend /build/hit-iz-web/src/main/webapp /tmp/grunt-webapp
 
+# The Grunt output replaces src/main/webapp wholesale, and Grunt knows nothing
+# about WEB-INF: without the copy below the WAR ships with no web.xml, which
+# is where the Spring Security filter chain and the 120-minute session are
+# declared. The framework's WebAppInitializer only registers the dispatcher
+# servlet, so a WAR without web.xml comes up with no security filter at all.
 RUN if [ "$SKIP_FRONTEND" = "0" ]; then \
-      rm -rf hit-iz-web/src/main/webapp \
-      && cp -a /tmp/grunt-webapp hit-iz-web/src/main/webapp; \
+      cp -a hit-iz-web/src/main/webapp/WEB-INF/web.xml /tmp/web.xml \
+      && rm -rf hit-iz-web/src/main/webapp \
+      && cp -a /tmp/grunt-webapp hit-iz-web/src/main/webapp \
+      && mkdir -p hit-iz-web/src/main/webapp/WEB-INF \
+      && cp -a /tmp/web.xml hit-iz-web/src/main/webapp/WEB-INF/web.xml; \
     fi \
-    && rm -rf /tmp/grunt-webapp \
+    && rm -rf /tmp/grunt-webapp /tmp/web.xml \
     && rm -rf /root/.m2/repository/gov/nist/hit/iz/hit-iz-resource \
     && mvn -s /root/.m2/settings.xml clean install -DskipTests -B -Dexec.skip=true \
     && bash scripts/embed-resource-bundle-in-war.sh \
-    && test -f hit-iz-web/target/immunization-himss.war
+    && test -f hit-iz-web/target/immunization-himss.war \
+    && bash scripts/check-war.sh hit-iz-web/target/immunization-himss.war
 
 FROM tomcat:9.0.117-jdk17-temurin-noble AS runtime
 
