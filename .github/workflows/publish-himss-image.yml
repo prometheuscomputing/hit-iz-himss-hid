@@ -153,11 +153,7 @@ jobs:
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "GitHub Release ${TAG} already exists."
           else
-            NOTES="Tool release ${VERSION} from himss.
-
-Image: ghcr.io/prometheuscomputing/hit-iz-himss-hid:${TAG}
-
-Also tagged ${VERSION}, rb-${{ steps.meta.outputs.rb }}, himss, and latest."
+            NOTES="Tool release ${VERSION} from himss. Image: ghcr.io/prometheuscomputing/hit-iz-himss-hid:${TAG}. Also tagged ${VERSION}, rb-${{ steps.meta.outputs.rb }}, himss, and latest."
             gh release create "${TAG}" \
               --title "HIMSS Immunization Test Suite ${VERSION}" \
               --notes "${NOTES}" \
