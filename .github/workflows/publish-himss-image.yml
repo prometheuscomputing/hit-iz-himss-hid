@@ -1,23 +1,39 @@
-name: Publish HIMSS Tool image
+name: Build HIMSS image
 
-# Publish only when someone chooses to: a GitHub Release, or Run workflow
-# with an explicit tag. Merge to himss does not publish.
+# Creates GHCR images from the himss branch: after a PR merge, or Run workflow.
 # Does not process the TCAMT zip — that is process-resource-bundle.yml.
 
-run-name: publish HIMSS image
+run-name: build HIMSS image from himss
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [himss]
+    paths:
+      - 'hit-iz-resource/**'
+      - 'hit-iz-domain/**'
+      - 'hit-iz-repo/**'
+      - 'hit-iz-service/**'
+      - 'hit-iz-ws/**'
+      - 'hit-iz-web/**'
+      - 'docker/**'
+      - 'scripts/**'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '.dockerignore'
+      - '.github/workflows/publish-himss-image.yml'
   workflow_dispatch:
     inputs:
       tag:
-        description: Image tag (e.g. 1.9.15)
-        required: true
+        description: Override image tag (empty = himss-<app.version>)
+        required: false
         type: string
 
+concurrency:
+  group: publish-himss-image
+  cancel-in-progress: false
+
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -29,28 +45,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          ref: himss
           fetch-depth: 0
 
       - name: Set image tags
         id: meta
         run: |
           set -euo pipefail
+          version="$(grep '^app.version=' hit-iz-web/src/main/resources/app-config.properties | cut -d= -f2 | tr -d '[:space:]')"
           rb="$(grep '^app.resourceBundleVersion=' hit-iz-web/src/main/resources/app-config.properties | cut -d= -f2 | tr -d '[:space:]')"
-          sha="${GITHUB_SHA::7}"
+          sha="$(git rev-parse --short=7 HEAD)"
+          release_tag="himss-${version}"
+          override="${{ github.event.inputs.tag }}"
+          if [ -n "${override}" ]; then
+            primary="${override}"
+          else
+            primary="${release_tag}"
+          fi
           {
+            echo "version=${version}"
             echo "rb=${rb}"
             echo "sha=${sha}"
+            echo "release_tag=${release_tag}"
+            echo "primary=${primary}"
           } >> "$GITHUB_OUTPUT"
-
-          if [ "${{ github.event_name }}" = "release" ]; then
-            tag="${{ github.event.release.tag_name }}"
-          else
-            tag="${{ inputs.tag }}"
-          fi
-          version="${tag#v}"
-          echo "primary=${tag}" >> "$GITHUB_OUTPUT"
-          echo "extra=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Check if frontend rebuild is needed
         id: frontend
@@ -81,12 +99,16 @@ jobs:
           load: true
           build-args: |
             SKIP_FRONTEND=${{ steps.frontend.outputs.skip_frontend }}
+            TOOL_VERSION=${{ steps.meta.outputs.version }}
+            RESOURCE_BUNDLE_VERSION=${{ steps.meta.outputs.rb }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.extra }}
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.release_tag }}
             ${{ env.IMAGE_NAME }}:rb-${{ steps.meta.outputs.rb }}
             ${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.sha }}
             ${{ env.IMAGE_NAME }}:himss
+            ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -100,10 +122,44 @@ jobs:
       - name: Push image
         run: |
           set -euo pipefail
-          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}"
-          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.extra }}"
-          docker push "${{ env.IMAGE_NAME }}:rb-${{ steps.meta.outputs.rb }}"
-          docker push "${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.sha }}"
-          docker push "${{ env.IMAGE_NAME }}:himss"
-          docker tag "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}" "${{ env.IMAGE_NAME }}:latest"
-          docker push "${{ env.IMAGE_NAME }}:latest"
+          for tag in \
+            "${{ steps.meta.outputs.primary }}" \
+            "${{ steps.meta.outputs.version }}" \
+            "${{ steps.meta.outputs.release_tag }}" \
+            "rb-${{ steps.meta.outputs.rb }}" \
+            "sha-${{ steps.meta.outputs.sha }}" \
+            himss \
+            latest
+          do
+            docker push "${{ env.IMAGE_NAME }}:${tag}"
+          done
+
+      - name: Tag git release if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.meta.outputs.release_tag }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Git tag ${TAG} already exists."
+          else
+            git tag -a "${TAG}" -m "HIMSS Immunization Test Suite ${VERSION}"
+            git push origin "${TAG}"
+            echo "Created git tag ${TAG}."
+          fi
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "GitHub Release ${TAG} already exists."
+          else
+            NOTES="Tool release ${VERSION} from himss.
+
+Image: ghcr.io/prometheuscomputing/hit-iz-himss-hid:${TAG}
+
+Also tagged ${VERSION}, rb-${{ steps.meta.outputs.rb }}, himss, and latest."
+            gh release create "${TAG}" \
+              --title "HIMSS Immunization Test Suite ${VERSION}" \
+              --notes "${NOTES}" \
+              --target himss
+          fi

@@ -1,4 +1,8 @@
 .git
+**/.DS_Store
+hit-iz-web/src/main/webapp/WEB-INF/lib
+hit-iz-web/src/main/webapp/WEB-INF/classes
+hit-iz-web/src/main/webapp/META-INF
 **/.idea
 **/*.iml
 **/target
