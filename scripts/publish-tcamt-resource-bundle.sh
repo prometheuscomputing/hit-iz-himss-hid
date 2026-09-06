@@ -50,5 +50,5 @@ Automated gap-fill: organize domain, generate PDFs, merge Contextbased/Global iz
 EOF
 )"
 
-echo "==> Committed. Push to himss to trigger build/deploy:"
-echo "    git push origin himss"
+echo "==> Committed. Push this branch and open a PR into himss (build + smoke)."
+echo "    Image publish happens after merge to himss — see README.md."

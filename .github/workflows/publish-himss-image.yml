@@ -1,6 +1,25 @@
 name: Publish HIMSS Tool image
 
+# Runs when himss-deploy is merged into himss (push to himss).
+# Also runs on a GitHub Release or a manual dispatch with an explicit tag.
+# Does not process the TCAMT zip — that happens on himss-deploy.
+
 on:
+  push:
+    branches: [himss]
+    paths:
+      - 'hit-iz-resource/**'
+      - 'hit-iz-domain/**'
+      - 'hit-iz-repo/**'
+      - 'hit-iz-service/**'
+      - 'hit-iz-ws/**'
+      - 'hit-iz-web/**'
+      - 'docker/**'
+      - 'scripts/**'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '.dockerignore'
+      - '.github/workflows/publish-himss-image.yml'
   release:
     types: [published]
   workflow_dispatch:
@@ -26,17 +45,34 @@ jobs:
           ref: ${{ github.event.release.tag_name || github.ref }}
           fetch-depth: 0
 
-      - name: Set image tag
+      - name: Set image tags
         id: meta
         run: |
+          set -euo pipefail
+          rb="$(grep '^app.resourceBundleVersion=' hit-iz-web/src/main/resources/app-config.properties | cut -d= -f2 | tr -d '[:space:]')"
+          sha="${GITHUB_SHA::7}"
+          {
+            echo "rb=${rb}"
+            echo "sha=${sha}"
+          } >> "$GITHUB_OUTPUT"
+
           if [ "${{ github.event_name }}" = "release" ]; then
             tag="${{ github.event.release.tag_name }}"
-          else
+            version="${tag#v}"
+            echo "primary=${tag}" >> "$GITHUB_OUTPUT"
+            echo "extra=${version}" >> "$GITHUB_OUTPUT"
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             tag="${{ inputs.tag }}"
+            version="${tag#v}"
+            echo "primary=${tag}" >> "$GITHUB_OUTPUT"
+            echo "extra=${version}" >> "$GITHUB_OUTPUT"
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "primary=rb-${rb}" >> "$GITHUB_OUTPUT"
+            echo "extra=sha-${sha}" >> "$GITHUB_OUTPUT"
+            echo "latest=false" >> "$GITHUB_OUTPUT"
           fi
-          version="${tag#v}"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Check if frontend rebuild is needed
         id: frontend
@@ -68,14 +104,14 @@ jobs:
           build-args: |
             SKIP_FRONTEND=${{ steps.frontend.outputs.skip_frontend }}
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.extra }}
+            ${{ env.IMAGE_NAME }}:himss
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Smoke test the image
-        run: bash scripts/docker-smoke-test.sh "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}" 8080
+        run: bash scripts/docker-smoke-test.sh "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}" 8080
 
       - name: Collect smoke test logs
         if: failure()
@@ -84,6 +120,10 @@ jobs:
       - name: Push image
         run: |
           set -euo pipefail
-          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}"
-          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}"
-          docker push "${{ env.IMAGE_NAME }}:latest"
+          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}"
+          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.extra }}"
+          docker push "${{ env.IMAGE_NAME }}:himss"
+          if [ "${{ steps.meta.outputs.latest }}" = "true" ]; then
+            docker tag "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}" "${{ env.IMAGE_NAME }}:latest"
+            docker push "${{ env.IMAGE_NAME }}:latest"
+          fi

@@ -1,42 +1,29 @@
-# TCAMT resource bundle export (source input)
+# TCAMT resource bundle export
 
-Place the TCAMT **exportRBZip** output here as `resources.zip`.
+Put the TCAMT **exportRBZip** output in this directory as `resources.zip`. Any machine; no fixed download path.
 
-When this file changes on branch `himss`, GitHub Actions will:
+How that zip becomes a reviewed PR and then a published image: [README.md](README.md) (Resource bundle and image).
 
-1. Organize `Contextbased/` and `Global/` under domain `iz`
-2. Generate PDFs from `*PDF.html` via wkhtmltopdf
-3. Merge into `hit-iz-resource/src/main/resources/`
-4. Bump `app.resourceBundleVersion`
-5. Commit the processed resources and trigger the HIMSS build workflow
-
-## Local workflow
+## Process locally
 
 ```bash
-# 1. Export from TCAMT (plan 65bbb6102d8670360bc30cd8) and copy zip here
-cp ~/Downloads/resources.zip tcamt-export/resources.zip
+# preview
+bash scripts/process-tcamt-resource-bundle.sh tcamt-export/resources.zip
 
-# 2. Process, bump version, commit
-bash scripts/publish-tcamt-resource-bundle.sh
-
-# 3. Push — CI builds and smoke-tests the image
-git push origin himss
-```
-
-## Process only (no commit)
-
-```bash
+# write into hit-iz-resource/ and bump app.resourceBundleVersion
 bash scripts/process-tcamt-resource-bundle.sh --apply --bump-version tcamt-export/resources.zip
 ```
 
-Dry run first:
+Commit helper (processes, stages, commits — you push the branch):
 
 ```bash
-bash scripts/process-tcamt-resource-bundle.sh tcamt-export/resources.zip
+bash scripts/publish-tcamt-resource-bundle.sh tcamt-export/resources.zip
 ```
 
-## Notes
+## What the zip does and does not contain
 
-- `Contextfree/`, `Documentation/`, `soap/`, and `About/` are **not** in the TCAMT zip; they stay in the repo unchanged.
-- Do **not** run `randomize_ids.py` on updates — it would break stable test object IDs.
-- PDF generation uses local `wkhtmltopdf` or Docker (`surnet/alpine-wkhtmltopdf`) on macOS.
+- Updated: `Contextbased/` and `Global/` for domain `iz`.
+- Unchanged in git: `Contextfree/`, `Documentation/`, `soap/`, `About/`.
+- Do **not** run ID randomization on an update — that breaks stable test object IDs.
+
+PDF generation uses `wkhtmltopdf` on the PATH, or Docker (`surnet/alpine-wkhtmltopdf`) if the binary is missing.
