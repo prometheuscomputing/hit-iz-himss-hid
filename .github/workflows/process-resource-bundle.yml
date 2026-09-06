@@ -1,29 +1,22 @@
-name: HIMSS deploy branch
+name: Process resource bundle
 
-# Process a new TCAMT zip (if present) and build+smoke the image.
-# Does not publish to GHCR — that happens when himss-deploy merges into himss.
+# Dedicated write-back: if the TCAMT zip on himss-deploy changed, process it,
+# bump app.resourceBundleVersion, and commit. Does not build or publish.
+
+run-name: process resource bundle
 
 on:
   push:
     branches: [himss-deploy]
     paths:
       - 'tcamt-export/resources.zip'
-      - 'hit-iz-resource/**'
-      - 'hit-iz-domain/**'
-      - 'hit-iz-repo/**'
-      - 'hit-iz-service/**'
-      - 'hit-iz-ws/**'
-      - 'hit-iz-web/**'
-      - 'docker/**'
-      - 'scripts/**'
-      - 'pom.xml'
-      - '**/pom.xml'
-      - '.dockerignore'
-      - '.github/workflows/himss-deploy.yml'
+      - 'scripts/process-tcamt-resource-bundle.sh'
+      - 'scripts/rb/**'
+      - '.github/workflows/process-resource-bundle.yml'
   workflow_dispatch:
 
 concurrency:
-  group: himss-deploy-${{ github.ref }}
+  group: process-resource-bundle-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -96,66 +89,3 @@ jobs:
           git commit -m "chore: sync resource bundle from TCAMT export (${VERSION})"
           git push origin himss-deploy
           echo "processed=true" >> "$GITHUB_OUTPUT"
-
-  build:
-    needs: process
-    if: github.actor != 'github-actions[bot]' && !cancelled() && needs.process.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: himss-deploy
-
-      - name: Verify resource bundle version bump
-        run: bash scripts/verify-resource-bundle-version.sh
-
-      - name: Check if frontend rebuild is needed
-        id: frontend
-        run: |
-          if bash scripts/needs-frontend-build.sh; then
-            echo "skip_frontend=0" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip_frontend=1" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build tool image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: hit-iz-himss-hid:ci
-          build-args: |
-            SKIP_FRONTEND=${{ steps.frontend.outputs.skip_frontend }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Extract WAR from image
-        run: |
-          mkdir -p hit-iz-web/target
-          cid="$(docker create hit-iz-himss-hid:ci)"
-          docker cp "$cid:/usr/local/tomcat/webapps/immunization-himss.war" hit-iz-web/target/immunization-himss.war
-          docker rm "$cid"
-          ls -lh hit-iz-web/target/immunization-himss.war
-
-      - name: Upload WAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: immunization-himss-war
-          path: hit-iz-web/target/immunization-himss.war
-          if-no-files-found: error
-
-      - name: Smoke test image
-        run: bash scripts/docker-smoke-test.sh hit-iz-himss-hid:ci 18080
-
-      - name: Collect smoke test logs
-        if: failure()
-        run: docker logs smoke-app 2>&1 | tail -400 || true

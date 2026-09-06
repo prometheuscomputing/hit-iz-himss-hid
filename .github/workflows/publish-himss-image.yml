@@ -1,25 +1,12 @@
 name: Publish HIMSS Tool image
 
-# Runs when himss-deploy is merged into himss (push to himss).
-# Also runs on a GitHub Release or a manual dispatch with an explicit tag.
-# Does not process the TCAMT zip — that happens on himss-deploy.
+# Publish only when someone chooses to: a GitHub Release, or Run workflow
+# with an explicit tag. Merge to himss does not publish.
+# Does not process the TCAMT zip — that is process-resource-bundle.yml.
+
+run-name: publish HIMSS image
 
 on:
-  push:
-    branches: [himss]
-    paths:
-      - 'hit-iz-resource/**'
-      - 'hit-iz-domain/**'
-      - 'hit-iz-repo/**'
-      - 'hit-iz-service/**'
-      - 'hit-iz-ws/**'
-      - 'hit-iz-web/**'
-      - 'docker/**'
-      - 'scripts/**'
-      - 'pom.xml'
-      - '**/pom.xml'
-      - '.dockerignore'
-      - '.github/workflows/publish-himss-image.yml'
   release:
     types: [published]
   workflow_dispatch:
@@ -58,21 +45,12 @@ jobs:
 
           if [ "${{ github.event_name }}" = "release" ]; then
             tag="${{ github.event.release.tag_name }}"
-            version="${tag#v}"
-            echo "primary=${tag}" >> "$GITHUB_OUTPUT"
-            echo "extra=${version}" >> "$GITHUB_OUTPUT"
-            echo "latest=true" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            tag="${{ inputs.tag }}"
-            version="${tag#v}"
-            echo "primary=${tag}" >> "$GITHUB_OUTPUT"
-            echo "extra=${version}" >> "$GITHUB_OUTPUT"
-            echo "latest=true" >> "$GITHUB_OUTPUT"
           else
-            echo "primary=rb-${rb}" >> "$GITHUB_OUTPUT"
-            echo "extra=sha-${sha}" >> "$GITHUB_OUTPUT"
-            echo "latest=false" >> "$GITHUB_OUTPUT"
+            tag="${{ inputs.tag }}"
           fi
+          version="${tag#v}"
+          echo "primary=${tag}" >> "$GITHUB_OUTPUT"
+          echo "extra=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Check if frontend rebuild is needed
         id: frontend
@@ -106,6 +84,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.extra }}
+            ${{ env.IMAGE_NAME }}:rb-${{ steps.meta.outputs.rb }}
+            ${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.sha }}
             ${{ env.IMAGE_NAME }}:himss
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -122,8 +102,8 @@ jobs:
           set -euo pipefail
           docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}"
           docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.extra }}"
+          docker push "${{ env.IMAGE_NAME }}:rb-${{ steps.meta.outputs.rb }}"
+          docker push "${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.sha }}"
           docker push "${{ env.IMAGE_NAME }}:himss"
-          if [ "${{ steps.meta.outputs.latest }}" = "true" ]; then
-            docker tag "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}" "${{ env.IMAGE_NAME }}:latest"
-            docker push "${{ env.IMAGE_NAME }}:latest"
-          fi
+          docker tag "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.primary }}" "${{ env.IMAGE_NAME }}:latest"
+          docker push "${{ env.IMAGE_NAME }}:latest"
