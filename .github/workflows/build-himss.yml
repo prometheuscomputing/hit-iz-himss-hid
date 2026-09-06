@@ -1,7 +1,9 @@
 name: HIMSS PR check
 
-# Status check on a pull request into himss. Does not process the zip and
-# does not publish. Process + build already ran on himss-deploy.
+# The only image build + smoke. Runs on a pull request into himss.
+# Does not process the zip and does not publish.
+
+run-name: HIMSS PR check
 
 on:
   pull_request:

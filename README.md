@@ -78,28 +78,27 @@ CERT_TOOLS_DIR=/path/to/your/compose ./build.sh -r
 
 ## Resource bundle and image
 
-Two Actions. `himss-deploy` prepares and proves the image. `himss` publishes it.
+Three Actions. Process and publish are opt-in. The image is built only on the PR into `himss`.
 
 ```
-push to himss-deploy
-        │
-        ├─ zip changed?  process + bump version + commit on himss-deploy
-        └─ always         build + smoke  (no GHCR)
+push zip to himss-deploy    process + bump version + commit  (no image)
 
-PR himss-deploy → himss     same build/smoke as a required check
+PR himss-deploy → himss     build + smoke  (no GHCR)
 
-merge into himss            publish GHCR
+merge into himss            nothing published
+
+Release or Run workflow     build + smoke + publish GHCR
 ```
 
 | Workflow | Trigger | Process zip | Build + smoke | GHCR |
 |----------|---------|-------------|---------------|------|
-| [himss-deploy.yml](.github/workflows/himss-deploy.yml) | Push to `himss-deploy` | Yes, if `tcamt-export/resources.zip` changed | Yes | No |
+| [process-resource-bundle.yml](.github/workflows/process-resource-bundle.yml) | Push of the TCAMT zip (or process scripts) to `himss-deploy`, or **Run workflow** | Yes, if `tcamt-export/resources.zip` changed | No | No |
 | [build-himss.yml](.github/workflows/build-himss.yml) | PR into `himss` | No | Yes | No |
-| [publish-himss-image.yml](.github/workflows/publish-himss-image.yml) | Merge/push to `himss`, Release, or **Run workflow** | No | Yes | Yes |
+| [publish-himss-image.yml](.github/workflows/publish-himss-image.yml) | GitHub Release or **Run workflow** | No | Yes | Yes |
 
-### 1. Work on `himss-deploy`
+### 1. Process the zip on `himss-deploy`
 
-Drop a TCAMT `exportRBZip` as `tcamt-export/resources.zip` and push. CI will organize `Contextbased/` + `Global/` (`iz`), generate PDFs, bump `app.resourceBundleVersion`, and commit that back to `himss-deploy`. Then it builds and smoke-tests the image.
+Drop a TCAMT `exportRBZip` as `tcamt-export/resources.zip` and push. The process Action organizes `Contextbased/` + `Global/` (`iz`), generates PDFs, bumps `app.resourceBundleVersion`, and commits that back to `himss-deploy`. It does not build the image.
 
 You can still process on a workstation first if you want the diff in your own commit:
 
@@ -107,24 +106,28 @@ You can still process on a workstation first if you want the diff in your own co
 bash scripts/process-tcamt-resource-bundle.sh --apply --bump-version tcamt-export/resources.zip
 ```
 
-If the zip did not change, CI skips processing and still builds when app or resource paths changed.
+If the zip did not change, the process Action does nothing. A bot commit does not re-run the Action.
 
 `Contextfree/`, `Documentation/`, `soap/`, and `About/` are not in the TCAMT zip. Do not randomize test object IDs on an update.
 
 ### 2. Pull request into `himss`
 
-Open `himss-deploy` → `himss`. Reviewers see the processed resource diff. The PR check rebuilds and smoke-tests only — no publish.
+Open `himss-deploy` → `himss`. Reviewers see the processed resource diff. The PR check is the only automatic image build and smoke test. Merge does not publish.
 
-### 3. Merge to `himss` — publish
+### 3. Publish when you choose
 
 `ghcr.io/prometheuscomputing/hit-iz-himss-hid`
 
-| Tag | When |
-|-----|------|
-| `rb-<app.resourceBundleVersion>` | Merge to `himss` (e.g. `rb-1.9.15`) |
-| `sha-<7-char>` | Merge to `himss` |
-| `himss` | Moving pointer at latest merged `himss` |
-| Release / manual tag + `latest` | GitHub Release or **Run workflow** |
+Create a GitHub Release, or **Actions → Publish HIMSS Tool image → Run workflow** with a tag (for example `1.9.15`). That builds, smoke-tests, and pushes:
+
+| Tag | Meaning |
+|-----|---------|
+| the Release / dispatch tag | What you named this publish |
+| same tag without a leading `v` | Convenience alias |
+| `rb-<app.resourceBundleVersion>` | Bundle version in `app-config.properties` (e.g. `rb-1.9.15`) |
+| `sha-<7-char>` | Git SHA that was built |
+| `himss` | Moving pointer at the last published image |
+| `latest` | Same as this publish |
 
 ---
 
