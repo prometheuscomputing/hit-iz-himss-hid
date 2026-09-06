@@ -81,7 +81,7 @@ CERT_TOOLS_DIR=/path/to/your/compose ./build.sh -r
 Three Actions. Process and publish are opt-in. The image is built only on the PR into `himss`.
 
 ```
-push zip to himss-deploy    process + bump version + commit  (no image)
+Run workflow (process)      process + bump version + commit on himss-deploy
 
 PR himss-deploy → himss     build + smoke  (no GHCR)
 
@@ -92,21 +92,19 @@ Release or Run workflow     build + smoke + publish GHCR
 
 | Workflow | Trigger | Process zip | Build + smoke | GHCR |
 |----------|---------|-------------|---------------|------|
-| [process-resource-bundle.yml](.github/workflows/process-resource-bundle.yml) | Push of the TCAMT zip (or process scripts) to `himss-deploy`, or **Run workflow** | Yes, if `tcamt-export/resources.zip` changed | No | No |
+| [process-resource-bundle.yml](.github/workflows/process-resource-bundle.yml) | **Run workflow** only | Always | No | No |
 | [build-himss.yml](.github/workflows/build-himss.yml) | PR into `himss` | No | Yes | No |
 | [publish-himss-image.yml](.github/workflows/publish-himss-image.yml) | GitHub Release or **Run workflow** | No | Yes | Yes |
 
 ### 1. Process the zip on `himss-deploy`
 
-Drop a TCAMT `exportRBZip` as `tcamt-export/resources.zip` and push. The process Action organizes `Contextbased/` + `Global/` (`iz`), generates PDFs, bumps `app.resourceBundleVersion`, and commits that back to `himss-deploy`. It does not build the image.
+Put a TCAMT `exportRBZip` on `himss-deploy` as `tcamt-export/resources.zip`. Then **Actions → Process resource bundle → Run workflow**. It always processes that zip (even if it did not change), organizes `Contextbased/` + `Global/` (`iz`), generates PDFs, bumps `app.resourceBundleVersion`, and commits on `himss-deploy`. It does not build the image.
 
 You can still process on a workstation first if you want the diff in your own commit:
 
 ```bash
 bash scripts/process-tcamt-resource-bundle.sh --apply --bump-version tcamt-export/resources.zip
 ```
-
-If the zip did not change, the process Action does nothing. A bot commit does not re-run the Action.
 
 `Contextfree/`, `Documentation/`, `soap/`, and `About/` are not in the TCAMT zip. Do not randomize test object IDs on an update.
 
