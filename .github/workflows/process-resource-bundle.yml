@@ -1,22 +1,15 @@
 name: Process resource bundle
 
-# Dedicated write-back: if the TCAMT zip on himss-deploy changed, process it,
+# Manual only. Always process tcamt-export/resources.zip on himss-deploy,
 # bump app.resourceBundleVersion, and commit. Does not build or publish.
 
 run-name: process resource bundle
 
 on:
-  push:
-    branches: [himss-deploy]
-    paths:
-      - 'tcamt-export/resources.zip'
-      - 'scripts/process-tcamt-resource-bundle.sh'
-      - 'scripts/rb/**'
-      - '.github/workflows/process-resource-bundle.yml'
   workflow_dispatch:
 
 concurrency:
-  group: process-resource-bundle-${{ github.ref }}
+  group: process-resource-bundle-himss-deploy
   cancel-in-progress: true
 
 permissions:
@@ -24,7 +17,6 @@ permissions:
 
 jobs:
   process:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,60 +24,32 @@ jobs:
           fetch-depth: 0
           ref: himss-deploy
 
-      - name: Detect new or changed TCAMT zip
-        id: zip
-        run: |
-          set -euo pipefail
-          ZIP="tcamt-export/resources.zip"
-          BEFORE="${{ github.event.before }}"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ -f "$ZIP" ]; then
-              echo "changed=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "changed=false" >> "$GITHUB_OUTPUT"
-            fi
-            exit 0
-          fi
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            if [ -f "$ZIP" ]; then
-              echo "changed=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "changed=false" >> "$GITHUB_OUTPUT"
-            fi
-            exit 0
-          fi
-          if git diff --name-only "$BEFORE" "${{ github.sha }}" -- "$ZIP" | grep -q .; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Install wkhtmltopdf
-        if: steps.zip.outputs.changed == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y wkhtmltopdf
 
       - name: Process zip and commit
-        id: sync
-        if: steps.zip.outputs.changed == 'true'
         run: |
           set -euo pipefail
+          ZIP="tcamt-export/resources.zip"
+          if [ ! -f "$ZIP" ]; then
+            echo "Missing $ZIP on himss-deploy."
+            exit 1
+          fi
           bash scripts/process-tcamt-resource-bundle.sh \
             --apply \
             --bump-version \
-            tcamt-export/resources.zip
+            "$ZIP"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             hit-iz-resource/src/main/resources \
             hit-iz-web/src/main/resources/app-config.properties
           if git diff --staged --quiet; then
-            echo "processed=false" >> "$GITHUB_OUTPUT"
-            echo "Zip produced no resource changes."
+            echo "Process produced no file changes."
             exit 0
           fi
           VERSION="$(grep '^app.resourceBundleVersion=' hit-iz-web/src/main/resources/app-config.properties | cut -d= -f2)"
           git commit -m "chore: sync resource bundle from TCAMT export (${VERSION})"
           git push origin himss-deploy
-          echo "processed=true" >> "$GITHUB_OUTPUT"
