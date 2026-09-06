@@ -2,6 +2,10 @@ name: Build HIMSS image
 
 # Creates GHCR images from the himss branch: after a PR merge, or Run workflow.
 # Does not process the TCAMT zip — that is process-resource-bundle.yml.
+#
+# The same image is parked in ECR as sha-<commit> and :candidate. Nothing here
+# writes the :latest tag the running service follows, so a push cannot change
+# what runs by itself; promotion is a separate, human-approved step.
 
 run-name: build HIMSS image from himss
 
@@ -35,9 +39,12 @@ concurrency:
 permissions:
   contents: write
   packages: write
+  id-token: write # assume the AWS role through OIDC, no stored keys
 
 env:
   IMAGE_NAME: ghcr.io/prometheuscomputing/hit-iz-himss-hid
+  AWS_REGION: us-east-2
+  ECR_REPO: 708499050170.dkr.ecr.us-east-2.amazonaws.com/healthit/himms
 
 jobs:
   publish:
@@ -133,6 +140,26 @@ jobs:
           do
             docker push "${{ env.IMAGE_NAME }}:${tag}"
           done
+
+      - name: AWS login
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::708499050170:role/healthit-prod-github-himss
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Park deploy candidate in ECR
+        run: |
+          set -euo pipefail
+          SRC="${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.sha }}"
+          for tag in "sha-${{ steps.meta.outputs.sha }}" candidate; do
+            docker tag "$SRC" "${ECR_REPO}:${tag}"
+            docker push "${ECR_REPO}:${tag}"
+          done
+          echo "Parked ${ECR_REPO}:sha-${{ steps.meta.outputs.sha }} (also tagged :candidate)."
+          echo "Nothing is deployed yet; the candidate is promoted separately."
 
       - name: Tag git release if missing
         env:
