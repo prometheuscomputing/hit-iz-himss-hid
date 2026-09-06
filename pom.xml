@@ -18,6 +18,10 @@
 	<properties>
 		<spring.version>4.3.8.RELEASE</spring.version>
 		<hithl7v2.version>1.1.1-SNAPSHOT</hithl7v2.version>
+		<hitcore.version>1.1.2-SNAPSHOT</hitcore.version>
+		<unifiedreport.version>1.1.1-SNAPSHOT</unifiedreport.version>
+		<hl7v2.version>1.7.3</hl7v2.version>
+		<log4j.version>2.25.4</log4j.version>
 		
 		<!-- <hitcore.version>1.0.28</hitcore.version> -->
 <!--		<core.version>1.0.48</core.version>-->
@@ -25,17 +29,116 @@
 		
 	</properties>
 
+	<!-- Pin the framework chain to what the 1.9.14 release shipped with. The
+	     hit-core-hl7v2 1.1.1-SNAPSHOT pom on Nexus still points at hit-core
+	     1.1.0 and the older validation engine, and a plain build would pick
+	     those up and lose the framework fixes the deployed tool relies on. -->
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-domain</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-repo</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-service</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-transport</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-api</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-auth-domain</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-auth-repo</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit.core</groupId>
+				<artifactId>hit-core-auth-service</artifactId>
+				<version>${hitcore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+				<artifactId>report</artifactId>
+				<version>${unifiedreport.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+				<artifactId>report-filter</artifactId>
+				<version>${unifiedreport.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+				<artifactId>validation-proxy</artifactId>
+				<version>${unifiedreport.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+				<artifactId>xml-schema</artifactId>
+				<version>${unifiedreport.version}</version>
+			</dependency>
+			<dependency>
 				<groupId>gov.nist.hit.hl7</groupId>
 				<artifactId>xml-verification</artifactId>
-				<version>1.6.0-LEGACY</version>
+				<version>1.6.5-SNAPSHOT</version>
 			</dependency>
 			<dependency>
 				<groupId>gov.nist.healthcare</groupId>
 				<artifactId>schematronValidation</artifactId>
-				<version>1.1</version>
+				<version>1.1-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist</groupId>
+				<artifactId>hl7-v2-parser</artifactId>
+				<version>${hl7v2.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist</groupId>
+				<artifactId>hl7-v2-profile</artifactId>
+				<version>${hl7v2.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist</groupId>
+				<artifactId>hl7-v2-validation</artifactId>
+				<version>${hl7v2.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hit</groupId>
+				<artifactId>hl7-v2-schemas</artifactId>
+				<version>1.7.2</version>
+			</dependency>
+			<dependency>
+				<groupId>gov.nist.hl7.v2.validation</groupId>
+				<artifactId>hl7-v2-validation-utils</artifactId>
+				<version>1.1.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>${log4j.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
