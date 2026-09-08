@@ -119,6 +119,27 @@ RUN set -eux; \
     fi; \
     cd / && rm -rf /tmp/sessfix
 
+# The framework pulls in JavaMail 1.4 (mail-1.4.jar + mailapi-1.4.3.jar). When
+# that version upgrades an SMTP connection with STARTTLS it offers TLSv1 only,
+# which current JDKs disable and the relay refuses, so every send fails right
+# after connecting. 1.6.2 keeps the javax.mail API the code compiles against
+# and leaves the protocol to the JDK. Vendored jar, checksum from Maven Central.
+COPY docker/javax.mail-1.6.2.jar /tmp/javax.mail-1.6.2.jar
+RUN set -eux; \
+    WAR=/usr/local/tomcat/webapps/immunization-himss.war; \
+    echo "935151eb71beff17a2ffac15dd80184a99a0514f  /tmp/javax.mail-1.6.2.jar" | sha1sum -c -; \
+    mkdir -p /tmp/mailfix && cd /tmp/mailfix; \
+    jar tf "$WAR" | grep -qE '^WEB-INF/lib/mail-1\.4[^/]*\.jar$'; \
+    jar tf "$WAR" | grep -q '^WEB-INF/lib/activation-1.1.jar$'; \
+    jar xf "$WAR"; \
+    rm -f WEB-INF/lib/mail-1.4*.jar WEB-INF/lib/mailapi-*.jar; \
+    cp /tmp/javax.mail-1.6.2.jar WEB-INF/lib/javax.mail-1.6.2.jar; \
+    rm -f "$WAR"; \
+    jar cf "$WAR" .; \
+    jar tf "$WAR" | grep -q '^WEB-INF/lib/javax.mail-1.6.2.jar$'; \
+    ! jar tf "$WAR" | grep -qE '^WEB-INF/lib/(mail-1\.4[^/]*|mailapi-[^/]*)\.jar$'; \
+    cd / && rm -rf /tmp/mailfix /tmp/javax.mail-1.6.2.jar
+
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
     && printf 'tool=%s\nbundle=%s\n' "${TOOL_VERSION}" "${RESOURCE_BUNDLE_VERSION}" > /opt/himss-release
