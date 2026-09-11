@@ -13,6 +13,8 @@ need() {
 need WEB-INF/web.xml
 need WEB-INF/classes/app-config.properties
 need WEB-INF/classes/gov/nist/hit/core/api/config/ExtraScanFix.class
+need WEB-INF/classes/gov/nist/hit/core/api/TestCaseValidationReportController.class
+need WEB-INF/classes/gov/nist/hit/core/api/TestStepValidationReportController.class
 need WEB-INF/classes/gov/nist/hit/iz/web/config/IZWebBeanConfig.class
 need WEB-INF/lib/hit-core-api-1.1.2-SNAPSHOT.jar
 need WEB-INF/lib/hit-core-hl7v2-service-1.1.1-SNAPSHOT.jar
