@@ -86,6 +86,11 @@ jobs:
             echo "skip_frontend=1" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Branding gate
+        env:
+          CHECK_FRONTEND_SOURCE: ${{ steps.frontend.outputs.skip_frontend == '0' && '1' || '0' }}
+        run: bash scripts/check-branding.sh
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
