@@ -22,6 +22,7 @@
 package gov.nist.hit.core.api;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -90,6 +91,9 @@ public class TestCaseValidationReportController {
 
 	@Autowired
 	private TestCaseService testCaseService;
+
+	@Autowired
+	private TestStepValidationReportService testStepValidationReportService;
 
 	@Autowired
 	private AccountService accountService;
@@ -172,9 +176,37 @@ public class TestCaseValidationReportController {
 		try {
 			testCaseValidationReportService.deleteByTestCaseAndUser(userId, testCaseId);
 		} catch (OptimisticLockingFailureException e) {
-			logger.info("Records for testcase " + testCaseId + " were already cleared by a concurrent request");
+			// The UI clears the previous test case and its last test step in parallel, and the
+			// service deletes the case's reports as one batch. When the two collide the batch
+			// rolls back, so whatever is left is removed one report at a time below.
+			logger.info("Records for testcase " + testCaseId + " collided with a concurrent clear, retrying one by one");
+		}
+		for (TestStepValidationReport report : remainingReports(userId, testCaseId)) {
+			try {
+				testStepValidationReportService.delete(report.getId());
+			} catch (OptimisticLockingFailureException e) {
+				logger.info("Report " + report.getId() + " was already cleared by a concurrent request");
+			}
+		}
+		List<TestStepValidationReport> left = remainingReports(userId, testCaseId);
+		if (!left.isEmpty()) {
+			throw new ValidationReportException("Could not clear " + left.size() + " record(s) for testcase " + testCaseId);
 		}
 		return true;
+	}
+
+	private List<TestStepValidationReport> remainingReports(Long userId, Long testCaseId) {
+		List<TestStepValidationReport> out = new ArrayList<TestStepValidationReport>();
+		TestCase testCase = testCaseService.findOne(testCaseId);
+		if (testCase != null && testCase.getTestSteps() != null) {
+			for (TestStep testStep : testCase.getTestSteps()) {
+				List<TestStepValidationReport> reports = testStepValidationReportService.findAllByTestStepAndUser(testStep.getId(), userId);
+				if (reports != null) {
+					out.addAll(reports);
+				}
+			}
+		}
+		return out;
 	}
 	
 	
